@@ -38,19 +38,29 @@ def purchase(request):
     movie_ids = list(cart.keys())
     if (movie_ids == []):
         return redirect('cart.index')
+
     movies_in_cart = Movie.objects.filter(id__in=movie_ids)
     cart_total = calculate_cart_total(cart, movies_in_cart)
+    
     order = Order()
     order.user = request.user
     order.total = cart_total
     order.save()
+
     for movie in movies_in_cart:
+        quantity = int(cart[str(movie.id)])   # ✅ convert once
+
         item = Item()
         item.movie = movie
         item.price = movie.price
         item.order = order
-        item.quantity = cart[str(movie.id)]
+        item.quantity = quantity              # ✅ use the int, not the string
         item.save()
+
+        if movie.amount_left is not None:
+            movie.amount_left = max(0, movie.amount_left - quantity)  # ✅ also use int here
+            movie.save()
+
     request.session['cart'] = {}
     template_data = {}
     template_data['title'] = 'Purchase confirmation'

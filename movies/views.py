@@ -2,16 +2,35 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Movie, Review
 from django.contrib.auth.decorators import login_required
 
+# def index(request):
+#     search_term = request.GET.get('search')
+#     if search_term:
+#         movies = Movie.objects.filter(name__icontains=search_term)
+#     else:
+#         movies = Movie.objects.all()
+
+#     template_data = {}
+#     template_data['title'] = 'Movies'
+#     template_data['movies'] = movies
+#     return render(request, 'movies/index.html',
+#                   {'template_data': template_data})
+
 def index(request):
     search_term = request.GET.get('search')
     if search_term:
-        movies = Movie.objects.filter(name__icontains=search_term)
+        movies = Movie.objects.filter(
+            name__icontains=search_term
+        ).filter(amount_left__gt=0) | Movie.objects.filter(
+            name__icontains=search_term,
+            amount_left__isnull=True
+        )
     else:
-        movies = Movie.objects.all()
+        movies = Movie.objects.filter(amount_left__gt=0) | Movie.objects.filter(amount_left__isnull=True)
 
-    template_data = {}
-    template_data['title'] = 'Movies'
-    template_data['movies'] = movies
+    template_data = {
+        'title': 'Movies',
+        'movies': movies.distinct()  # ensures no duplicates
+    }
     return render(request, 'movies/index.html',
                   {'template_data': template_data})
 
